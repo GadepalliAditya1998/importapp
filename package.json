@@ -1,0 +1,14 @@
+{
+  "name": "excel-import-xml",
+  "version": "1.0.0",
+  "description": "A project to import Excel files and generate XML output from the data.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "live-server src"
+  },
+  "dependencies": {
+    "xlsx": "^0.17.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}

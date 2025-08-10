@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Excel Import to XML</title>
+  <script src="./lib/xlsx.full.min.js"></script>
+  <script src="./lib/xmlparser.js"></script>
+  <link rel="stylesheet" href="./styles/app.css" />
+</head>
+
+<body>
+
+  <h2>Excel Import to XML</h2>
+
+  <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" multiple />
+
+  <div id="importWizard" style="display: none;">
+    <div class="controls wizard-steps" style="display: flex; gap: 16px; margin-bottom: 12px;">
+      <button id="tabFiles" class="tab-btn active">Files Upload</button>
+      <span class="wizard-arrow">&#8594;</span>
+      <button id="tabTransform" class="tab-btn">Transform</button>
+      <span class="wizard-arrow">&#8594;</span>
+      <button id="tabGenerate" class="tab-btn">Generate</button>
+      <button id="proceedBtn" disabled style="margin-left:auto;">Next</button>
+    </div>
+
+    <div id="wizardContainer" class="wizard-container-hidden" style="margin-top:20px;">
+      <div id="fileUploadView" class="wizard-step">
+        <div style="display: flex;">
+          <div class="file-list" id="uploadFileList">
+            <h4>Files</h4>
+            <ul id="fileNames"></ul>
+          </div>
+          <div class="preview-section">
+            <h4>Preview</h4>
+            <div id="sheetPreview">Select a file to preview</div>
+            <div id="virtualPreview" class="preview-scroll" style="height:400px; overflow:auto;"></div>
+          </div>
+        </div>
+      </div>
+      <div id="transformView" class="wizard-step-hidden wizard-step transform-view">
+        <h4>Transform</h4>
+        <div style="display: flex;">
+          <div class="file-list" id="transformFileList">
+            <h4>Files</h4>
+            <ul id="transformFileNames"></ul>
+          </div>
+          <div class="preview-section">
+            <h4>Preview</h4>
+            <div id="transformSheetPreview" class="preview">
+              <div id="sheetHeadersSection" style="margin-bottom: 18px;">
+                <h5>Sheet Columns</h5>
+                <ul id="sheetHeadersList" class="sheet-headers-list"></ul>
+              </div>
+              <div id="outputConfigSection">
+                <h5>Output Configuration</h5>
+                <div id="xmlPreview" class="xml-preview">
+                  
+                </div>
+                <!-- Add more transformation controls as needed -->
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Add transformation controls here -->
+      </div>
+      <div id="generateView" class="wizard-step-hidden wizard-step">
+        <h4>Generate</h4>
+        <p>Click the button below to generate the XML file.</p>
+        <button id="generateXmlBtn">Generate XML</button>
+      </div>
+    </div>
+    <div id="transformView">
+
+    </div>
+  </div>
+
+  <div id="loadingOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(255,255,255,0.8); z-index:9999; align-items:center; justify-content:center;">
+    <div style="display:flex; flex-direction:column; align-items:center;">
+      <div class="loader"></div>
+      <div style="font-size:1.2em; color:#6366f1; margin-top:16px;">
+        Loading files, please wait...
+      </div>
+    </div>
+  </div>
+
+  <script src="./scripts/app.js"></script>
+  <script src="./scripts/transform-view.js"></script>
+  <script src="./utils/transform-utils.js"></script>
+</body>
+
+</html>
