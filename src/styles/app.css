@@ -29,9 +29,12 @@ body {
 }
 
 .file-list li {
-  padding: 8px;
+  padding: 12px 8px;
   cursor: pointer;
   border-radius: 4px;
+  text-overflow: ellipsis;
+  max-width: 240px;
+  overflow: hidden;
 }
 
 .file-list li.selected {

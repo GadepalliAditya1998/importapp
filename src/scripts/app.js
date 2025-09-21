@@ -3,17 +3,18 @@ const fileDataMap = new Map();
 const fileColumnsMap = new Map();
 var currentStep = 0;
 
-document.getElementById("excelFile").addEventListener("change", onUploadSuccess);
+document
+  .getElementById("excelFile")
+  .addEventListener("change", onUploadSuccess);
 
 function onUploadSuccess(event) {
-  document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById("loadingOverlay").style.display = "flex";
   const fileInput = document.getElementById("excelFile");
   const fileNamesUl = document.getElementById("fileNames");
-  
-  fileNamesUl.innerHTML = ''; // Clear previous file names
-  fileDataMap.clear(); // Clear previous data
-  fileInput.style.display = 'none'; // Hide file input after upload
 
+  fileNamesUl.innerHTML = ""; // Clear previous file names
+  fileDataMap.clear(); // Clear previous data
+  fileInput.style.display = "none"; // Hide file input after upload
 
   handleFile(event);
 }
@@ -22,14 +23,14 @@ function handleFile(e) {
   const files = e.target.files;
   if (!files.length) return;
 
-  Array.from(files).forEach(file => {
+  Array.from(files).forEach((file) => {
     const reader = new FileReader();
     reader.onload = function (event) {
       const data = new Uint8Array(event.target.result);
       const workbook = XLSX.read(data, { type: "array" });
 
       // Process each sheet in the workbook
-      workbook.SheetNames.forEach(sheetName => {
+      workbook.SheetNames.forEach((sheetName) => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
@@ -51,9 +52,9 @@ function handleFile(e) {
 }
 
 function onFileReadSuccess() {
-  document.getElementById('loadingOverlay').style.display = 'none';
+  document.getElementById("loadingOverlay").style.display = "none";
   const importWizard = document.getElementById("importWizard");
-const wizardContainer = document.getElementById("wizardContainer");
+  const wizardContainer = document.getElementById("wizardContainer");
 
   importWizard.style.display = "block"; // Show the wizard container
 
@@ -62,60 +63,86 @@ const wizardContainer = document.getElementById("wizardContainer");
   wizardContainer.classList.add("wizard-container-visible");
 }
 
-function generateXML(headers, rows) {
-  let xml = '<root>\n';
-  rows.forEach(row => {
-    xml += '  <row>\n';
-    headers.forEach((header, index) => {
-      xml += `    <${header}>${row[index] ?? ''}</${header}>\n`;
-    });
-    xml += '  </row>\n';
+function generateXML(headers, rows, transformConfig) {
+  let xml = transformConfig?.rootTag
+    ? `<${transformConfig.rootTag}>\n`
+    : "<root>\n";
+  rows.forEach((row) => {
+    xml += transformConfig?.rowTag
+      ? `  <${transformConfig.rowTag}>\n`
+      : "  <row>\n";
+    if (transformConfig) {
+      const macroRegex = /\{\{(.*?)\}\}/g;
+      
+      xml+= transformConfig.xml.replace(macroRegex, (match, p1) => {
+          const macroIdx = headers.indexOf(p1.trim());
+          return macroIdx !== -1 ? (row[macroIdx] ?? "") : match;
+        });
+      // headers.forEach((header, index) => {
+      //   xml += `    <${header}>${row[index] ?? ""}</${header}>\n`;
+      // });
+      xml += transformConfig?.rowTag
+        ? `  </${transformConfig.rowTag}>\n`
+        : "  </row>\n";
+    }
   });
-  xml += '</root>';
+  xml += transformConfig?.rootTag ? `</${transformConfig.rootTag}>` : "</root>";
   return xml;
 }
 
 document.getElementById("excelFile").addEventListener("change", function (e) {
   const files = Array.from(e.target.files);
-  const fileNamesUl = document.getElementById('fileNames');
-  fileNamesUl.innerHTML = '';
+  const fileNamesUl = document.getElementById("fileNames");
+  fileNamesUl.innerHTML = "";
   fileDataMap.clear();
 
   // Enable Proceed button if files are uploaded
-  document.getElementById('proceedBtn').disabled = files.length === 0;
+  document.getElementById("proceedBtn").disabled = files.length === 0;
 
   files.forEach((file, idx) => {
     const reader = new FileReader();
     reader.onload = function (event) {
       const data = new Uint8Array(event.target.result);
-      const workbook = XLSX.read(data, { type: "array" });
+      const workbook = XLSX.read(data, {
+        type: "array",
+        cellDates: true,
+        // cellNF: true,
+        // cellText: false,
+      });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        raw: false,
+      });
       fileDataMap.set(file.name, jsonData);
     };
     reader.readAsArrayBuffer(file);
 
-    const li = document.createElement('li');
+    const li = document.createElement("li");
+    li.setAttribute("title", file.name);
     li.textContent = file.name;
     li.dataset.index = idx;
-    li.addEventListener('click', function () {
-      document.getElementById('sheetPreview').style.display = 'none';
-      Array.from(fileNamesUl.children).forEach(el => el.classList.remove('selected'));
-      li.classList.add('selected');
+    li.addEventListener("click", function () {
+      document.getElementById("sheetPreview").style.display = "none";
+      Array.from(fileNamesUl.children).forEach((el) =>
+        el.classList.remove("selected")
+      );
+      li.classList.add("selected");
       showPreview(file.name);
     });
     fileNamesUl.appendChild(li);
   });
 
-  document.getElementById('sheetPreview').textContent = 'Select a file to preview';
+  document.getElementById("sheetPreview").textContent =
+    "Select a file to preview";
 });
 
 function showPreview(fileName) {
-  const previewDiv = document.getElementById('virtualPreview');
+  const previewDiv = document.getElementById("virtualPreview");
   const data = fileDataMap.get(fileName);
   if (!data || !data.length) {
-    previewDiv.textContent = 'No data found in this file.';
+    previewDiv.textContent = "No data found in this file.";
     return;
   }
 
@@ -124,28 +151,28 @@ function showPreview(fileName) {
   const visibleRows = Math.ceil(previewDiv.clientHeight / rowHeight);
 
   // Clear previous content
-  previewDiv.innerHTML = '';
-  previewDiv.style.position = 'relative';
+  previewDiv.innerHTML = "";
+  previewDiv.style.position = "relative";
 
   // Spacer for scroll height
-  const spacer = document.createElement('div');
-  spacer.style.height = (totalRows * rowHeight) + 'px';
-  spacer.style.width = '100%';
+  const spacer = document.createElement("div");
+  spacer.style.height = totalRows * rowHeight + "px";
+  spacer.style.width = "100%";
   previewDiv.appendChild(spacer);
 
   // Table structure (absolute positioned)
-  const table = document.createElement('table');
-  table.style.position = 'absolute';
-  table.style.top = '0';
-  table.style.left = '0';
-  table.style.right = '0';
-  table.style.width = '100%';
+  const table = document.createElement("table");
+  table.style.position = "absolute";
+  table.style.top = "0";
+  table.style.left = "0";
+  table.style.right = "0";
+  table.style.width = "100%";
 
   // Table head
-  const thead = document.createElement('thead');
-  const headRow = document.createElement('tr');
-  data[0].forEach(header => {
-    const th = document.createElement('th');
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  data[0].forEach((header) => {
+    const th = document.createElement("th");
     th.textContent = header;
     headRow.appendChild(th);
   });
@@ -153,21 +180,21 @@ function showPreview(fileName) {
   table.appendChild(thead);
 
   // Table body
-  const tbody = document.createElement('tbody');
-  tbody.id = 'virtualTbody';
+  const tbody = document.createElement("tbody");
+  tbody.id = "virtualTbody";
   table.appendChild(tbody);
 
   previewDiv.appendChild(table);
 
   function renderRows(start) {
-    tbody.innerHTML = '';
+    tbody.innerHTML = "";
     for (let i = start; i < Math.min(start + visibleRows, totalRows + 1); i++) {
       const row = data[i + 1];
-      const tr = document.createElement('tr');
-      tr.style.height = rowHeight + 'px';
+      const tr = document.createElement("tr");
+      tr.style.height = rowHeight + "px";
       data[0].forEach((_, idx) => {
-        const td = document.createElement('td');
-        td.textContent = row ? row[idx] ?? '' : '';
+        const td = document.createElement("td");
+        td.textContent = row ? row[idx] ?? "" : "";
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -187,124 +214,145 @@ function showPreview(fileName) {
   };
 }
 
-document.getElementById('proceedBtn').addEventListener('click', function () {
+document.getElementById("proceedBtn").addEventListener("click", function () {
   // Hide wizard view, show transform view
 
-  document.getElementById('fileUploadView').style.display = 'none';
-  document.getElementById('transformView').style.display = 'none';
-  document.getElementById('generateView').style.display = 'none';
+  document.getElementById("fileUploadView").style.display = "none";
+  document.getElementById("transformView").style.display = "none";
+  document.getElementById("generateView").style.display = "none";
 
   currentStep++;
 
-  const elements = document.getElementsByClassName('tab-btn');
+  const elements = document.getElementsByClassName("tab-btn");
 
   for (let index = 0; index < elements.length; index++) {
     if (index == currentStep) {
-      elements[index].classList.add('active');
+      elements[index].classList.add("active");
       elements[index].disabled = false;
     } else {
-      elements[index].classList.remove('active');
+      elements[index].classList.remove("active");
       elements[index].disabled = true;
     }
   }
 
   switch (currentStep) {
     case 0:
-      document.getElementById('wizardContainer').style.display = 'block';
+      document.getElementById("wizardContainer").style.display = "block";
       break;
     case 1:
-      document.getElementById('transformView').style.display = 'block';
+      document.getElementById("transformView").style.display = "block";
       // Copy file names to transformFileNames
-      const fileNamesUl = document.getElementById('fileNames');
-      const transformFileNamesUl = document.getElementById('transformFileNames');
-      transformFileNamesUl.innerHTML = '';
-      Array.from(fileNamesUl.children).forEach(li => {
+      const fileNamesUl = document.getElementById("fileNames");
+      const transformFileNamesUl =
+        document.getElementById("transformFileNames");
+      transformFileNamesUl.innerHTML = "";
+      Array.from(fileNamesUl.children).forEach((li) => {
         const clone = li.cloneNode(true);
         // Remove any preview click handler for now
         clone.onclick = function (event) {
-          event.target.classList.add('selected');
-          onTransformViewFileClicked(event.target.textContent)
+          event.target.classList.add("selected");
+          onTransformViewFileClicked(event.target.textContent);
         };
         transformFileNamesUl.appendChild(clone);
       });
       break;
     case 2:
-      document.getElementById('generateView').style.display = 'block';
+      document.getElementById("generateView").style.display = "block";
       // Load generate options or UI here
       break;
   }
 });
 
 // Generate & Download XML on button click
-document.getElementById('generateXmlBtn').addEventListener('click', function () {
-  const selectedLi = document.querySelector('#fileNames li.selected');
-  if (!selectedLi) {
-    alert('Please select a file to export.');
-    return;
-  }
-  const fileName = selectedLi.textContent;
-  const data = fileDataMap.get(fileName);
-  if (!data || !data.length) {
-    alert('No data found in selected file.');
-    return;
-  }
-  const format = document.getElementById('formatSelect').value;
-  let content = '';
-  let ext = '';
-  if (format === 'xml') {
-    const headers = data[0];
-    const rows = data.slice(1);
-    content = generateXML(headers, rows);
-    ext = 'xml';
-  }
-  // Future: add other formats here
-
-  // Trigger download
-  const blob = new Blob([content], { type: 'text/xml' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${fileName.replace(/\.[^/.]+$/, "")}.${ext}`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
-
-function showTransformHeaders(fileName) {
-    const previewDiv = document.getElementById('transformSheetPreview');
-    previewDiv.innerHTML = ''; // Clear previous
-
-    const data = fileDataMap.get(fileName);
-    if (!data || !data.length) {
-        previewDiv.textContent = 'No data found in this file.';
-        return;
+document
+  .getElementById("generateXmlBtn")
+  .addEventListener("click", function () {
+    if(fileDataMap.size===0){
+      alert("No files uploaded.");
+      return;
     }
 
-    // Create headers section
-    const headersSection = document.createElement('div');
-    headersSection.innerHTML = '<h5>Sheet Columns</h5>';
-    const headersList = document.createElement('ul');
-    headersList.style.display = 'flex';
-    headersList.style.gap = '12px';
-    headersList.style.flexWrap = 'wrap';
-    headersList.style.padding = '0';
-    headersList.style.listStyle = 'none';
+    const format = "xml";
 
-    data[0].forEach(header => {
-        const li = document.createElement('li');
-        li.textContent = header;
-        li.style.background = '#f3f3f3';
-        li.style.padding = '6px 12px';
-        li.style.borderRadius = '4px';
-        li.style.marginBottom = '4px';
+    fileDataMap.keys().forEach((key) => {
+      const fileName = key;
+      const data = fileDataMap.get(fileName);
+      let content = "";
+      let ext = "";
+      if (format === "xml") {
+        const headers = data[0];
+        const rows = data.slice(1);
+        content = generateXML(
+          headers,
+          rows,
+          tranformFileConfiguration.get(fileName)
+        );
+        ext = "xml";
 
-        li.addEventListener('click', function () {
-            insertMacro(`{{${header}}}`);
-        });
-        headersList.appendChild(li);
+        const blob = new Blob([content], { type: "text/xml" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${fileName.replace(/\.[^/.]+$/, "")}.${ext}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     });
 
-    headersSection.appendChild(headersList);
-    previewDiv.appendChild(headersSection);
+    // const selectedLi = document.querySelector("#fileNames li.selected");
+    // if (!selectedLi) {
+    //   alert("Please select a file to export.");
+    //   return;
+    // }
+    // const fileName = selectedLi.textContent;
+    // const data = fileDataMap.get(fileName);
+    // if (!data || !data.length) {
+    //   alert("No data found in selected file.");
+    //   return;
+    // }
+    
+    
+    // Future: add other formats here
 
-    // Optionally, add output config section here
+    // Trigger download
+  });
+
+function showTransformHeaders(fileName) {
+  const previewDiv = document.getElementById("transformSheetPreview");
+  previewDiv.innerHTML = ""; // Clear previous
+
+  const data = fileDataMap.get(fileName);
+  if (!data || !data.length) {
+    previewDiv.textContent = "No data found in this file.";
+    return;
+  }
+
+  // Create headers section
+  const headersSection = document.createElement("div");
+  headersSection.innerHTML = "<h5>Sheet Columns</h5>";
+  const headersList = document.createElement("ul");
+  headersList.style.display = "flex";
+  headersList.style.gap = "12px";
+  headersList.style.flexWrap = "wrap";
+  headersList.style.padding = "0";
+  headersList.style.listStyle = "none";
+
+  data[0].forEach((header) => {
+    const li = document.createElement("li");
+    li.textContent = header;
+    li.style.background = "#f3f3f3";
+    li.style.padding = "6px 12px";
+    li.style.borderRadius = "4px";
+    li.style.marginBottom = "4px";
+
+    li.addEventListener("click", function () {
+      insertMacro(`{{${header}}}`);
+    });
+    headersList.appendChild(li);
+  });
+
+  headersSection.appendChild(headersList);
+  previewDiv.appendChild(headersSection);
+
+  // Optionally, add output config section here
 }
