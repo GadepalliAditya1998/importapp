@@ -6,6 +6,7 @@
   <title>Excel Import to XML</title>
   <script src="./lib/xlsx.full.min.js"></script>
   <script src="./lib/xmlparser.js"></script>
+  <script src="./scripts/generators/infoarchive-schema-generator.js"></script>
   <link rel="stylesheet" href="./styles/app.css" />
 </head>
 
@@ -68,6 +69,25 @@
       <div id="generateView" class="wizard-step-hidden wizard-step">
         <h4>Generate</h4>
         <p>Click the button below to generate the XML file.</p>
+        <span>
+          <input type="checkbox" id="chkGenerateInfoArchive" onchange="onGenerateInfoArchiveChange(event)"/>
+          <label for="chkGenerateInfoArchive">Generate InfoArchive Schema</label>
+        </span>
+        <div id="metaOptionsContainer" class="display-none meta-options-container">
+          <span><label>Enter DB name: </label><input type="text" id="dbNameInput" /></span>
+          <br/>
+          <span>
+            <input type="checkbox" id="chkCaseInsensitive"/>
+            <label for="chkCaseInsensitive">Case Insensitive</label>
+          </span>
+          <br/>
+          <span>
+            <input type="checkbox" id="chkvalidateOnIngest"/>
+            <label for="chkvalidateOnIngest">Validate on Ingest</label>
+          </span>
+        </div>
+
+        <br/>
         <button id="generateXmlBtn">Generate XML</button>
       </div>
     </div>

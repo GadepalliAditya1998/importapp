@@ -12,16 +12,6 @@ function onTransformViewFileClicked(fileName) {
   headers.forEach((header) => {
     const li = document.createElement("li");
     li.textContent = header;
-    // li.addEventListener('mousedown', function (event) {
-    //     event.preventDefault(); // Prevent text selection
-    //     event.stopPropagation(); // Prevent click event from bubbling up
-    // });
-    // li.addEventListener('click', function (event) {
-    //     event.preventDefault();
-    //     event.stopPropagation();
-
-    //     insertMacro(`{{${header}}}`);
-    // });
     sheetHeaders.appendChild(li);
   });
 

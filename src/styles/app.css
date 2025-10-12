@@ -206,3 +206,17 @@ th {
   0% { transform: rotate(0deg);}
   100% { transform: rotate(360deg);}
 }
+
+.display-none {
+  display: none;
+}
+
+.display-block {
+  display: block;
+}
+
+.meta-options-container  {
+  margin-top: 10px;
+  margin-left: 25px;
+  margin-bottom: 10px;
+}

@@ -3,6 +3,8 @@ const fileDataMap = new Map();
 const fileColumnsMap = new Map();
 var currentStep = 0;
 
+var infoArchiveGenerator;
+
 document
   .getElementById("excelFile")
   .addEventListener("change", onUploadSuccess);
@@ -272,6 +274,63 @@ document
       return;
     }
 
+    const isInfoArchiveChecked = document.getElementById("chkGenerateInfoArchive").checked;
+    infoArchiveGenerator = null;
+    if (isInfoArchiveChecked) {
+      const dbName = document.getElementById("dbNameInput").value.trim();
+      if (!dbName) {
+        alert("Please enter a valid Database Name for InfoArchive schema.");
+        return;
+      }
+
+      const isCaseInsensitive =
+        document.getElementById("chkCaseInsensitive").checked;
+      const isValidateOnIngest = document.getElementById(
+        "chkvalidateOnIngest"
+      ).checked;
+
+      let metaData = {
+        caseSensitive: isCaseInsensitive,
+        validateOnIngest: isValidateOnIngest,
+        locale: "en-US",
+      };
+      
+      let tableDataList = {};
+
+      fileDataMap.forEach((data, fileName) => {
+        let tableName = fileName.replace(/\.[^/.]+$/, ""); // Remove extension
+        const headers = data[0];
+        const rows = data.slice(1);
+
+        let columnLengths = getColumnMaxStringLengths(headers, rows);
+
+        tableDataList[tableName] = {
+          recordCount: rows.length,
+          columns: headers.map(header => {
+            return {
+              name: header,
+              type: 'NVARCHAR',
+              length: Math.min(Math.max(columnLengths[header], 1), 4096),
+              scale: 0
+            }
+          }),
+        };
+      });
+
+      infoArchiveGenerator = new InfoArchiveGenerator(dbName, metaData, tableDataList);
+      let infoArchiveSchema = infoArchiveGenerator.generateInfoArchiveSchema();
+      console.log("Generated InfoArchive Schema:", infoArchiveSchema);
+
+      const fileName = `InfoArchiveSchema - ${dbName} - ${new Date().toISOString()}.xml`;
+      const blob = new Blob([infoArchiveSchema], { type: "text/xml" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${fileName.replace(/\.[^/.]+$/, "")}.xml`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
     const format = "xml";
 
     fileDataMap.keys().forEach((key) => {
@@ -355,4 +414,40 @@ function showTransformHeaders(fileName) {
   previewDiv.appendChild(headersSection);
 
   // Optionally, add output config section here
+}
+
+
+function onGenerateInfoArchiveChange(event) {
+  const isChecked = event.target.checked;
+  if(isChecked) {
+    // Show additional options for InfoArchive generation
+    document.getElementById("metaOptionsContainer").classList.remove("display-none");
+    document.getElementById("metaOptionsContainer").classList.add("display-block");
+  } else {
+    // Hide additional options for InfoArchive generation
+    document.getElementById("metaOptionsContainer").classList.remove("display-block");
+    document.getElementById("metaOptionsContainer").classList.add("display-none");
+
+    infoArchiveGenerator = null;
+  }
+}
+
+function getColumnMaxStringLengths(headers, rows) {
+  // Returns an object: { header1: maxLength, header2: maxLength, ... }
+  const maxLengths = Array(headers.length).fill(0);
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    for (let j = 0; j < headers.length; j++) {
+      const value = row[j];
+      if (typeof value === "string" && value.length > maxLengths[j]) {
+        maxLengths[j] = value.length;
+      }
+    }
+  }
+  // Map header to max length
+  const result = {};
+  headers.forEach((header, idx) => {
+    result[header] = maxLengths[idx];
+  });
+  return result;
 }
