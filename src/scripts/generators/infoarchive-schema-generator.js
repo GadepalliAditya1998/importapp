@@ -35,9 +35,11 @@ class InfoArchiveGenerator {
     let tablesLength = Object.keys(this.tableData).length;
     let dbSchema = `
         <schemaMetadataList>
+          <schemaMetadata>
             <name>${this.DBName}</name>
             <tableCount>${tablesLength}</tableCount>
             {{TABLE_METADATA_PLACEHOLDER}}
+          </schemaMetadata>
         </schemaMetadataList>
     `;
 

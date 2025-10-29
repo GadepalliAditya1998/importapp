@@ -65,10 +65,12 @@ function onFileReadSuccess() {
   wizardContainer.classList.add("wizard-container-visible");
 }
 
-function generateXML(headers, rows, transformConfig) {
+function generateXML(fileName, headers, rows, transformConfig) {
   let xml = transformConfig?.rootTag
     ? `<${transformConfig.rootTag}>\n`
     : "<root>\n";
+    const tableName = fileName.split('.')[0];
+  xml+=`<${tableName}>\n`;
   rows.forEach((row) => {
     xml += transformConfig?.rowTag
       ? `  <${transformConfig.rowTag}>\n`
@@ -78,7 +80,7 @@ function generateXML(headers, rows, transformConfig) {
       
       xml+= transformConfig.xml.replace(macroRegex, (match, p1) => {
           const macroIdx = headers.indexOf(p1.trim());
-          return macroIdx !== -1 ? (row[macroIdx] ?? "") : match;
+          return macroIdx !== -1 ? ((row[macroIdx] ?? "")) : match;
         });
       // headers.forEach((header, index) => {
       //   xml += `    <${header}>${row[index] ?? ""}</${header}>\n`;
@@ -88,6 +90,7 @@ function generateXML(headers, rows, transformConfig) {
         : "  </row>\n";
     }
   });
+  xml+=`</${tableName}>\n`;
   xml += transformConfig?.rootTag ? `</${transformConfig.rootTag}>` : "</root>";
   return xml;
 }
@@ -196,7 +199,7 @@ function showPreview(fileName) {
       tr.style.height = rowHeight + "px";
       data[0].forEach((_, idx) => {
         const td = document.createElement("td");
-        td.textContent = row ? row[idx] ?? "" : "";
+        td.textContent = row ? convertToXMLSafeString(row[idx] ?? "") : "";
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -283,6 +286,10 @@ document
         return;
       }
 
+      tranformFileConfiguration.forEach(c=> {
+        c.rootTag = dbName ?? 'root';
+      });
+
       const isCaseInsensitive =
         document.getElementById("chkCaseInsensitive").checked;
       const isValidateOnIngest = document.getElementById(
@@ -342,6 +349,7 @@ document
         const headers = data[0];
         const rows = data.slice(1);
         content = generateXML(
+          fileName,
           headers,
           rows,
           tranformFileConfiguration.get(fileName)
@@ -450,4 +458,15 @@ function getColumnMaxStringLengths(headers, rows) {
     result[header] = maxLengths[idx];
   });
   return result;
+}
+
+function convertToXMLSafeString(str) {
+  if (typeof str !== "string") return str;
+  
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
