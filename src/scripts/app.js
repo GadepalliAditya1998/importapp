@@ -66,15 +66,16 @@ function onFileReadSuccess() {
 }
 
 function generateXML(fileName, headers, rows, transformConfig) {
-  let xml = transformConfig?.rootTag
+  let xml = '<xml version="1.0">\n';
+    xml+=transformConfig?.rootTag
     ? `<${transformConfig.rootTag}>\n`
     : "<root>\n";
     const tableName = fileName.split('.')[0];
   xml+=`<${tableName}>\n`;
   rows.forEach((row) => {
     xml += transformConfig?.rowTag
-      ? `  <${transformConfig.rowTag}>\n`
-      : "  <row>\n";
+      ? `<${transformConfig.rowTag}>\n`
+      : "<row>\n";
     if (transformConfig) {
       const macroRegex = /\{\{(.*?)\}\}/g;
       
@@ -86,8 +87,8 @@ function generateXML(fileName, headers, rows, transformConfig) {
       //   xml += `    <${header}>${row[index] ?? ""}</${header}>\n`;
       // });
       xml += transformConfig?.rowTag
-        ? `  </${transformConfig.rowTag}>\n`
-        : "  </row>\n";
+        ? `</${transformConfig.rowTag}>\n`
+        : "</row>\n";
     }
   });
   xml+=`</${tableName}>\n`;
