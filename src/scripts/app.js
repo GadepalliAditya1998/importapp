@@ -66,7 +66,8 @@ function onFileReadSuccess() {
 }
 
 function generateXML(fileName, headers, rows, transformConfig) {
-  let xml = '<xml version="1.0">\n';
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  
     xml+=transformConfig?.rootTag
     ? `<${transformConfig.rootTag}>\n`
     : "<root>\n";
@@ -81,7 +82,7 @@ function generateXML(fileName, headers, rows, transformConfig) {
       
       xml+= transformConfig.xml.replace(macroRegex, (match, p1) => {
           const macroIdx = headers.indexOf(p1.trim());
-          return macroIdx !== -1 ? ((row[macroIdx] ?? "")) : match;
+          return macroIdx !== -1 ? ((convertToXMLSafeString(row[macroIdx]) ?? "")) : match;
         });
       // headers.forEach((header, index) => {
       //   xml += `    <${header}>${row[index] ?? ""}</${header}>\n`;
@@ -255,6 +256,9 @@ document.getElementById("proceedBtn").addEventListener("click", function () {
       Array.from(fileNamesUl.children).forEach((li) => {
         const clone = li.cloneNode(true);
         // Remove any preview click handler for now
+
+        saveDefaultTransformXML(clone.textContent);
+
         clone.onclick = function (event) {
           event.target.classList.add("selected");
           onTransformViewFileClicked(event.target.textContent);
@@ -299,7 +303,7 @@ document
 
       let metaData = {
         caseSensitive: isCaseInsensitive,
-        validateOnIngest: isValidateOnIngest,
+        validatingOnIngest: isValidateOnIngest,
         locale: "en-US",
       };
       
