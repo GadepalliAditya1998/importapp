@@ -39,28 +39,35 @@ function showXMLPreview(fileName) {
   pre.contentEditable = true; // Make it editable
   pre.addEventListener("input", function (event) {
     const updatedXML = event.target.textContent;
-    if (tranformFileConfiguration.has(fileName)) {
-      tranformFileConfiguration.get(fileName).xml = updatedXML;
-    } else {
-      tranformFileConfiguration.set(fileName, {
-        rootTag: "root",
-        rowTag: "row",
-        xml: updatedXML,
-      });
-    }
+    saveTransformFileConfig(fileName, updatedXML);
   });
   // pre.textContent = parser.parse(dummyData);
   previewDiv.appendChild(pre);
 }
 
+function saveDefaultTransformXML(fileName) {
+  const dummyData = generateDummyXML(fileColumnsMap.get(fileName));
+  saveTransformFileConfig(fileName, dummyData.xml);
+}
+
+function saveTransformFileConfig(fileName, updatedXML) {
+  if (tranformFileConfiguration.has(fileName)) {
+    tranformFileConfiguration.get(fileName).xml = updatedXML;
+  } else {
+    tranformFileConfiguration.set(fileName, {
+      rootTag: "root",
+      rowTag: "row",
+      xml: updatedXML,
+    });
+  }
+}
+
 function generateDummyXML(headers) {
-  let xml = `
-        {{row_Data}}
-    `;
+  let xml = `{{row_Data}}`;
 
   let rowData = "";
   headers.forEach((header) => {
-    rowData += `    <${header}>{{${header}}}</${header}>\n`;
+    rowData += `<${header}>{{${header}}}</${header}>\n`;
   });
 
   xml = xml.replace("{{row_Data}}", rowData);
